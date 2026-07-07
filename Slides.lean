@@ -1,5 +1,8 @@
 import VersoSlides
 
+-- cannot be in the same file
+import Slides.AddAttr
+
 -- for the second example
 import Mathlib.Data.Finset.Defs
 
@@ -15,7 +18,16 @@ import Mathlib.Analysis.Distribution.Support
 -- for a category theory example
 import Mathlib.CategoryTheory.Iso
 
--- cardinality, iso symbol
+-- for a list example
+import Mathlib.Data.Bool.Count
+
+-- graph example
+import Mathlib.Combinatorics.SimpleGraph.AdjMatrix
+
+-- for the example instance
+import Mathlib.Algebra.Ring.GrindInstances
+
+-- cardinality, iso symbol, dsupp
 open Finset CategoryTheory Distribution
 
 open VersoSlides
@@ -237,28 +249,343 @@ example {a b c : ℕ} (h₁ : f b = a) (h₂ : f c = a) :
   grind
 ```
 
+## Custom patterns
 
-
-# Welcome
-
-This is a presentation built with
-[`verso-slides`](https://github.com/leanprover/verso-slides).
-
-# Lean Code
-
-Here is a Lean code block:
+can be specified with `grind_pattern`
 
 ```lean
-def fib : Nat → Nat
-  | 0 => 0
-  | 1 => 1
-  | n + 2 => fib (n + 1) + fib n
+theorem mul_left_iff {M : Type*} [Monoid M] {a b : M}
+    (ha : IsUnit a) : IsUnit (a * b) ↔ IsUnit b :=
+  show IsUnit (ha.unit * b) ↔ _ by simp [-IsUnit.unit_spec]
+
+grind_pattern mul_left_iff => IsUnit a, IsUnit (a * b)
 ```
 
-The function {lean}`fib` computes Fibonacci numbers.
+## Custom patterns
 
-# Thank You
+```lean -show
+open List
+```
 
-:::fragment
-Questions?
-:::
+```lean
+@[simp]
+theorem count_false_add_count_true' (l : List Bool) :
+    count false l + count true l = length l :=
+  count_not_add_count l true
+
+grind_pattern count_false_add_count_true' => count false l
+grind_pattern count_false_add_count_true' => count true l
+
+```
+
+## Picking a Pattern
+
+Tagging with `@[grind]` gives suggestions.
+
+```lean -stretch
+@[grind]
+theorem gf'' (x : Nat) : g (f x) = x := by
+  simp [f, g]
+```
+
+## Identifying bad tagging
+
+* bad tagging can make `grind` very slow
+* see instantiated theorems with `trace.grind.ematch.instance`
+* loops in tagging can be caught with `#grind_lint`
+
+## Loop example
+
+```lean
+attribute [grind =] List.reverse_flatMap
+  List.flatMap_reverse
+
+#grind_lint inspect List.reverse_flatMap
+
+-- !fragment
+set_option trace.grind.ematch.instance true in
+#grind_lint inspect List.reverse_flatMap
+```
+
+## Finding loops
+
+Mathlib performs the following check:
+
+```
+#grind_lint check (min := 20) in module Mathlib
+```
+
+this gives
+
+```
+instantiating `Set.Icc.convexComb_symm` triggers 24 additional `grind` theorem instantiations
+instantiating `Path.symm_apply` triggers 24 additional `grind` theorem instantiations
+```
+
+## Preventing loops
+
+```lean -panel -stretch
+grind_pattern reverse_flatMap => (l.flatMap f).reverse where
+  f =/= List.reverse ∘ _
+
+grind_pattern flatMap_reverse => l.reverse.flatMap f where
+  f =/= List.reverse ∘ _
+```
+
+## Recommended patterns
+
+* `simp` lemmas should usually also be tagged with `grind =`
+* exceptions: lemmas that introduce case distinctions on the right side
+
+## Figuring out lemmas that should be tagged
+
+* when a `grind` call fails despite you thinking that it shouldn't
+* identify missing tags either manually or using `grind +suggestions`
+
+```lean
+@[simp]
+theorem isAdjMatrix_adjMatrix' (α : Type*) {V : Type*}
+    (G : SimpleGraph V) [DecidableRel G.Adj] [Zero α]
+    [One α] : (G.adjMatrix α).IsAdjMatrix where
+  zero_or_one := by grind? +suggestions
+```
+
+## Restricting e-matching
+
+* generation of hypothesis/conclusion: 0
+* generation of expression generated through e-matching: one higher than the highest of the terms used
+* set upper generation limit for expressions considered: `grind (gen := n)` (default: 8)
+
+
+# Satellite solvers
+
+* `grind` employs several satellite solvers to solve problems of a specific nature
+* For example:
+  * `cutsat` for linear integer arithmetic
+  * `ring` for algebraic expressions in rings
+  * `linarith` for linear arithmetic problems not solved by `cutsat`
+* not the same as Mathlib tactics of same name
+
+# Satellite solvers - instances
+
+* `grind` defines special instances that are used in the solvers
+  * e.g. {lean}`Lean.Grind.ToInt`, {lean}`Lean.Grind.CommRing`
+* Mathlib derives these instances from the standard Mathlib notions
+  * e.g. {lean}`CommRing.toGrindCommRing`
+
+# Interactive mode
+
+%%%
+vertical := some true
+%%%
+
+```lean
+theorem exists_subset_or_subset_of_two_mul_lt_card''
+    {α : Type*} [DecidableEq α] {X Y : Finset α} {n : ℕ}
+    (hXY : 2 * n < #(X ∪ Y)) :
+    ∃ C : Finset α, n < #C ∧ (C ⊆ X ∨ C ⊆ Y) := by
+  grind =>
+    have : #(X ∪ Y) = #X + #(Y \ X) := by grind?
+    finish
+```
+
+## Interactive mode - Example
+
+```lean
+grind_pattern card_union_add_card_inter => #(s ∪ t), s ∩ t
+grind_pattern card_union_add_card_inter => s ∪ t, #(s ∩ t)
+grind_pattern card_union_add_card_inter => #(s ∪ t), #s
+grind_pattern card_union_add_card_inter => #(s ∪ t), #t
+grind_pattern card_union_add_card_inter => #(s ∩ t), #s
+grind_pattern card_union_add_card_inter => #(s ∩ t), #t
+```
+
+```lean
+grind_pattern card_sdiff_add_card_inter =>
+  #(s \ t), #(s ∩ t)
+grind_pattern card_sdiff_add_card_inter => #(s \ t), #s
+```
+
+## Interactive mode tactic language
+
+Some features of Lean's tactic language also work in the interactive mode.
+
+For example: `all_goals`, `<;>` and `have`
+
+## `grind`-specific tactics
+
+* use satellite solvers explicitly by writing their name, e.g. `ring`, `linarith`
+* `cases` expects an anchor which can be chosen with `cases?`
+
+```lean
+@[simp] lemma forall_mem_not_eq {α : Type*} {s : Finset α}
+    {a : α} : (∀ b ∈ s, ¬ a = b) ↔ a ∉ s := by
+  grind =>
+    cases?
+    sorry
+```
+
+## `grind`-specific tactics
+
+* `finish`: instructs `grind` to finish the proof itself
+* `finish?`: provides a more detailed proof in tactic language
+
+```lean
+lemma two_mul_ediv_two_of_even' {n : ℤ} :
+    Even n → 2 * (n / 2) = n := by
+  grind =>
+    finish?
+```
+
+## `grind`-specific tactics
+
+* `instantiate`: use e-matching to instantiate theorems and consider additionally provided theorems
+
+```lean
+theorem isAdjMatrix_adjMatrix''' (α : Type*) {V : Type*}
+    (G : SimpleGraph V) [DecidableRel G.Adj] [Zero α]
+    [One α] : (G.adjMatrix α).IsAdjMatrix where
+  zero_or_one := by
+    -- Mathlib proof: `grind [SimpleGraph.adjMatrix_apply]`
+    grind =>
+      instantiate [SimpleGraph.adjMatrix_apply]
+      finish
+```
+
+## Query commands
+
+* output specific parts of the typical error messages
+* for example: `show_splits`, `show_state`, `show_true`, `show_false`, `show_asserted` and `show_eqcs`
+
+```lean
+theorem exists_subset_or_subset_of_two_mul_lt_card''''
+    {α : Type*} [DecidableEq α] {X Y : Finset α} {n : ℕ}
+    (hXY : 2 * n < #(X ∪ Y)) :
+    ∃ C : Finset α, n < #C ∧ (C ⊆ X ∨ C ⊆ Y) := by
+  grind =>
+    have : #(X ∪ Y) = #X + #(Y \ X)
+    show_eqcs
+    finish
+```
+
+# Miscellaneous further things
+
+%%%
+vertical := some true
+%%%
+
+## Local `grind`
+
+* using `grind` locally, e.g. when setting up basic theory around a definition
+* for theorems: `@[local grind *]` and `local grind_pattern`
+* for definitions in the same file: `grind +locals`
+
+## Custom `grind` sets
+
+* Using `grind` only in a certain situation, e.e. only when proving things about a specific object
+
+```
+/-- The `compactness` attribute is a custom grind-set
+specialized to prove that sets are compact.
+It is called by the `compactness` tactic. -/
+register_grind_attr compactness
+
+/-- The `closedness` attribute is a custom grind-set specialized to prove that sets are closed.
+It is called by the `closedness` tactic. -/
+register_grind_attr closedness
+```
+
+## Custom `grind` sets
+
+```lean
+attribute [compactness .] isCompact_Icc
+
+@[to_dual self, simp, closedness =]
+theorem closure_Icc' {α : Type*} [TopologicalSpace α]
+    [Preorder α]  [OrderClosedTopology α] (a b : α) :
+    closure (Set.Icc a b) = Set.Icc a b :=
+  isClosed_Icc.closure_eq
+
+example : IsCompact <|
+    closure (Set.Icc (1 : ℝ) (3 : ℝ)) := by
+  grind only [compactness, closedness]
+```
+
+## Style and Conventions
+
+* no real consensus yet
+* a few suggestions here
+
+## Style: Example 1
+
+```lean -panel
+example {α} [CommSemiring α] (x y : α) :
+    (x + y) ^ 2 = x ^ 2 + 2 • x * y + y ^ 2 := by
+  ring
+
+example {α} [CommSemiring α] (x y : α) :
+    (x + y) ^ 2 = x ^ 2 + 2 • x * y + y ^ 2 := by
+  grind
+```
+
+## Style: Example 2
+
+```lean -show
+open Polynomial
+```
+
+```lean -panel
+lemma eq_of_natDegree_lt_card_of_eval_eq {R} [CommRing R] [IsDomain R]
+    (p q : R[X]) {ι} [Fintype ι] {f : ι → R} (hf : Function.Injective f)
+    (heval : ∀ i : ι, eval (f i) p = eval (f i) q)
+    (hcard : max p.natDegree q.natDegree < Fintype.card ι) : p = q := by
+  rw [← sub_eq_zero]
+  apply eq_zero_of_natDegree_lt_card_of_eval_eq_zero _ hf
+  · simpa [eval_sub, sub_eq_zero]
+  · grind [natDegree_sub_le]
+
+lemma eq_of_natDegree_lt_card_of_eval_eq' {R} [CommRing R] [IsDomain R]
+    (p q : R[X]) {ι} [Fintype ι] {f : ι → R} (hf : Function.Injective f)
+    (heval : ∀ i : ι, eval (f i) p = eval (f i) q)
+    (hcard : max p.natDegree q.natDegree < Fintype.card ι) : p = q := by
+  rw [← sub_eq_zero]
+  apply eq_zero_of_natDegree_lt_card_of_eval_eq_zero _ hf
+  all_goals grind [eval_sub, sub_eq_zero, natDegree_sub_le]
+```
+
+## Style: Example 3
+
+```lean -panel
+theorem exists_subset_or_subset_of_two_mul_lt_card5
+    {α : Type*} [DecidableEq α] {X Y : Finset α} {n : ℕ}
+    (hXY : 2 * n < #(X ∪ Y)) :
+    ∃ C : Finset α, n < #C ∧ (C ⊆ X ∨ C ⊆ Y) := by
+  grind =>
+    have : #(X ∪ Y) = #X + #(Y \ X)
+    finish
+
+theorem exists_subset_or_subset_of_two_mul_lt_card6
+    {α : Type*} [DecidableEq α] {X Y : Finset α} {n : ℕ}
+    (hXY : 2 * n < #(X ∪ Y)) :
+    ∃ C : Finset α, n < #C ∧ (C ⊆ X ∨ C ⊆ Y) := by
+  have : #(X ∪ Y) = #X + #(Y \ X) := by grind
+  grind
+```
+
+## Maintainability
+
+* `grind` bugs: `grind?` doesn't produce working proofs
+* can make bumping projects harder
+* Mathlib lints against this (`verifyGrindOnly`) but doesn't change present offenders
+
+# Sources
+
+* [relevant section in the Language Reference](https://lean-lang.org/doc/reference/latest/The--grind--tactic/)
+* [Lean 4.25.0 release notes](https://lean-lang.org/doc/reference/latest/releases/v4.25.0/#The-Lean-Language-Reference--Release-Notes--Lean-4___25___0-_LPAR_2025-11-14_RPAR_--Highlights--Grind--Interactive-mode)
+* [Lean 4.28.0 release notes](https://lean-lang.org/doc/reference/latest/releases/v4.28.0/#The-Lean-Language-Reference--Release-Notes--Lean-4___28___0-_LPAR_2026-02-17_RPAR_--Highlights--User-Defined-Grind-Attributes)
+* [style suggestions by Chris Henson](https://github.com/chenson2018/leanprover-community.github.io/blob/grind-style/templates/contribute/grind.md)
+
+# Slides and Write-up
+
+* Slides: `scholzhannah.de/GrindSlides`
+* Write-up: `scholzhannah.de/GrindWriteUp`
