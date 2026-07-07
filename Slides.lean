@@ -359,6 +359,10 @@ theorem isAdjMatrix_adjMatrix' (α : Type*) {V : Type*}
 
 # Satellite solvers
 
+%%%
+vertical := some true
+%%%
+
 * `grind` employs several satellite solvers to solve problems of a specific nature
 * For example:
   * `cutsat` for linear integer arithmetic
@@ -366,7 +370,7 @@ theorem isAdjMatrix_adjMatrix' (α : Type*) {V : Type*}
   * `linarith` for linear arithmetic problems not solved by `cutsat`
 * not the same as Mathlib tactics of same name
 
-# Satellite solvers - instances
+## Satellite solvers - instances
 
 * `grind` defines special instances that are used in the solvers
   * e.g. {lean}`Lean.Grind.ToInt`, {lean}`Lean.Grind.CommRing`
@@ -474,7 +478,7 @@ theorem exists_subset_or_subset_of_two_mul_lt_card''''
 vertical := some true
 %%%
 
-## Local `grind`
+Local `grind`
 
 * using `grind` locally, e.g. when setting up basic theory around a definition
 * for theorems: `@[local grind *]` and `local grind_pattern`
@@ -576,7 +580,7 @@ theorem exists_subset_or_subset_of_two_mul_lt_card6
 
 * `grind` bugs: `grind?` doesn't produce working proofs
 * can make bumping projects harder
-* Mathlib lints against this (`verifyGrindOnly`) but doesn't change present offenders
+* Mathlib lints against this (`verifyGrindOnly`) but doesn't change present offences
 
 # Sources
 
@@ -587,5 +591,5 @@ theorem exists_subset_or_subset_of_two_mul_lt_card6
 
 # Slides and Write-up
 
-* Slides: `scholzhannah.de/GrindSlides`
-* Write-up: `scholzhannah.de/GrindWriteUp`
+* Slides: [scholzhannah.de/GrindSlides](scholzhannah.de/GrindSlides)
+* Write-up: [scholzhannah.de/GrindWriteUp](scholzhannah.de/GrindWriteUp)
