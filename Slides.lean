@@ -34,7 +34,7 @@ open VersoSlides
 
 # Error messages
 
-```lean
+```lean +error
 theorem exists_subset_or_subset_of_two_mul_lt_card''
     {α : Type*} [DecidableEq α] {X Y : Finset α} {n : ℕ}
     (hXY : 2 * n < #(X ∪ Y)) :
