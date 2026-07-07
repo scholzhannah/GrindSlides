@@ -26,8 +26,8 @@ jobs:
                   test: false
 
             - name: Build document
-              run: lake exe textbook
-
+              run: lake exe demo-slides --output _slides
+            
             - name: Upload Pages artifact
               uses: actions/upload-pages-artifact@v3
               with:
