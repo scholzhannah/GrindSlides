@@ -41,18 +41,19 @@ open VersoSlides
 * recent tactic, announced: July 2025
 * meant to automatically provide proofs for easy goals
 
+# Goals of presentation
+
+* basic understanding of the workings of `grind`
+* focus on usage and user interface
+* see a lot of Mathlib examples
+* read the [Language Reference](https://lean-lang.org/doc/reference/latest/The--grind--tactic/) for more detail
+
 # Intuition
 
 * "virtual whiteboard"
 * to start: hypotheses and negated conclusion on the whiteboard
 * employs different engines to discover a proof
 * engines write discovered facts on the whiteboard for other engines to use
-
-# Goals of presentation
-
-* basic understanding of the workings of `grind`
-* focus on usage and user interface
-* read the [Language Reference](https://lean-lang.org/doc/reference/latest/The--grind--tactic/) for more detail
 
 # Error messages
 
@@ -61,9 +62,10 @@ vertical := some true
 %%%
 ```lean +error
 theorem exists_subset_or_subset_of_two_mul_lt_card
-    {α : Type*} [DecidableEq α] {X Y : Finset α} {n : ℕ}
-    (hXY : 2 * n < #(X ∪ Y)) :
-    ∃ C : Finset α, n < #C ∧ (C ⊆ X ∨ C ⊆ Y) := by
+    {α : Type*} [DecidableEq α] {X Y : Finset α}
+    {n : ℕ} (hXY : 2 * n < #(X ∪ Y)) :
+    ∃ C : Finset α,
+      n < #C ∧ (C ⊆ X ∨ C ⊆ Y) := by
   grind
 ```
 
@@ -153,7 +155,8 @@ theorem card_ne_zero_of_mem {α : Type*} {s : Finset α}
 
 ```lean -stretch
 @[grind? =]
-lemma even_iff {n : ℤ} : Even n ↔ n % 2 = 0 where
+lemma even_iff {n : ℤ} :
+    Even n ↔ n % 2 = 0 where
   mp := fun ⟨m, hm⟩ ↦ by simp [← Int.two_mul, hm]
   mpr h := ⟨n / 2, by grind⟩
 ```
@@ -166,7 +169,8 @@ lemma even_iff {n : ℤ} : Even n ↔ n % 2 = 0 where
 ```lean -stretch
 @[grind? =_]
 theorem toList_toArray {α : Type*} {n : ℕ}
-    {xs : Vector α n} : xs.toArray.toList = xs.toList :=
+    {xs : Vector α n} :
+    xs.toArray.toList = xs.toList :=
   rfl
 ```
 
@@ -177,8 +181,8 @@ theorem toList_toArray {α : Type*} {n : ℕ}
 
 ```lean -stretch
 @[simp, grind? _=_]
-theorem trans_symm {C : Type*} [Category C] {X Y Z : C}
-    (α : X ≅ Y) (β : Y ≅ Z) :
+theorem trans_symm {C : Type*} [Category C]
+    {X Y Z : C} (α : X ≅ Y) (β : Y ≅ Z) :
     (α ≪≫ β).symm = β.symm ≪≫ α.symm :=
   rfl
 ```
@@ -203,8 +207,9 @@ lemma EqOn.eq_of_mem {α β : Type*} {s : Set α}
 
 ```lean -stretch
 @[grind? .]
-theorem isClosed_dsupport {α β F V : Type*} [FunLike F α β]
-    [TopologicalSpace α] [Zero β] [Zero V] {f : F → V} :
+theorem isClosed_dsupport {α β F V : Type*}
+    [FunLike F α β] [TopologicalSpace α]
+    [Zero β] [Zero V] {f : F → V} :
     IsClosed (dsupport f) := by
   grind [dsupport, isClosed_sInter]
 ```
@@ -232,8 +237,8 @@ def g (a : Nat) : Nat :=
 theorem gf (x : Nat) : g (f x) = x := by
   simp [f, g]
 
-example {a b c : ℕ} (h₁ : f b = a) (h₂ : f c = a) :
-    b = c := by
+example {a b c : ℕ} (h₁ : f b = a)
+    (h₂ : f c = a) : b = c := by
   grind
 ```
 
@@ -244,8 +249,8 @@ example {a b c : ℕ} (h₁ : f b = a) (h₂ : f c = a) :
 theorem gf' (x : Nat) : g (f x) = x := by
   simp [f, g]
 
-example {a b c : ℕ} (h₁ : f b = a) (h₂ : f c = a) :
-    b = c := by
+example {a b c : ℕ} (h₁ : f b = a)
+    (h₂ : f c = a) : b = c := by
   grind
 ```
 
@@ -253,12 +258,15 @@ example {a b c : ℕ} (h₁ : f b = a) (h₂ : f c = a) :
 
 can be specified with `grind_pattern`
 
-```lean
-theorem mul_left_iff {M : Type*} [Monoid M] {a b : M}
-    (ha : IsUnit a) : IsUnit (a * b) ↔ IsUnit b :=
-  show IsUnit (ha.unit * b) ↔ _ by simp [-IsUnit.unit_spec]
+```lean -panel
+theorem mul_left_iff {M : Type*}
+    [Monoid M] {a b : M} (ha : IsUnit a) :
+    IsUnit (a * b) ↔ IsUnit b :=
+  show IsUnit (ha.unit * b) ↔ _ by
+    simp [-IsUnit.unit_spec]
 
-grind_pattern mul_left_iff => IsUnit a, IsUnit (a * b)
+grind_pattern mul_left_iff =>
+  IsUnit a, IsUnit (a * b)
 ```
 
 ## Custom patterns
@@ -267,14 +275,17 @@ grind_pattern mul_left_iff => IsUnit a, IsUnit (a * b)
 open List
 ```
 
-```lean
+```lean -panel
 @[simp]
-theorem count_false_add_count_true' (l : List Bool) :
+theorem count_false_add_count_true'
+    (l : List Bool) :
     count false l + count true l = length l :=
   count_not_add_count l true
 
-grind_pattern count_false_add_count_true' => count false l
-grind_pattern count_false_add_count_true' => count true l
+grind_pattern count_false_add_count_true' =>
+  count false l
+grind_pattern count_false_add_count_true' =>
+  count true l
 
 ```
 
@@ -344,9 +355,10 @@ grind_pattern flatMap_reverse => l.reverse.flatMap f where
 
 ```lean
 @[simp]
-theorem isAdjMatrix_adjMatrix' (α : Type*) {V : Type*}
-    (G : SimpleGraph V) [DecidableRel G.Adj] [Zero α]
-    [One α] : (G.adjMatrix α).IsAdjMatrix where
+theorem isAdjMatrix_adjMatrix' (α : Type*)
+    {V : Type*} (G : SimpleGraph V)
+    [DecidableRel G.Adj] [Zero α] [One α] :
+    (G.adjMatrix α).IsAdjMatrix where
   zero_or_one := by grind? +suggestions
 ```
 
@@ -385,26 +397,26 @@ vertical := some true
 
 ```lean
 theorem exists_subset_or_subset_of_two_mul_lt_card''
-    {α : Type*} [DecidableEq α] {X Y : Finset α} {n : ℕ}
-    (hXY : 2 * n < #(X ∪ Y)) :
-    ∃ C : Finset α, n < #C ∧ (C ⊆ X ∨ C ⊆ Y) := by
+    {α : Type*} [DecidableEq α] {X Y : Finset α}
+    {n : ℕ} (hXY : 2 * n < #(X ∪ Y)) :
+    ∃ C : Finset α,
+      n < #C ∧ (C ⊆ X ∨ C ⊆ Y) := by
   grind =>
-    have : #(X ∪ Y) = #X + #(Y \ X) := by grind?
+    have : #(X ∪ Y) = #X + #(Y \ X) := by
+      grind?
     finish
 ```
 
 ## Interactive mode - Example
 
-```lean
+```lean -panel
 grind_pattern card_union_add_card_inter => #(s ∪ t), s ∩ t
 grind_pattern card_union_add_card_inter => s ∪ t, #(s ∩ t)
 grind_pattern card_union_add_card_inter => #(s ∪ t), #s
 grind_pattern card_union_add_card_inter => #(s ∪ t), #t
 grind_pattern card_union_add_card_inter => #(s ∩ t), #s
 grind_pattern card_union_add_card_inter => #(s ∩ t), #t
-```
 
-```lean
 grind_pattern card_sdiff_add_card_inter =>
   #(s \ t), #(s ∩ t)
 grind_pattern card_sdiff_add_card_inter => #(s \ t), #s
@@ -445,7 +457,7 @@ lemma two_mul_ediv_two_of_even' {n : ℤ} :
 
 * `instantiate`: use e-matching to instantiate theorems and consider additionally provided theorems
 
-```lean
+```lean -panel
 theorem isAdjMatrix_adjMatrix''' (α : Type*) {V : Type*}
     (G : SimpleGraph V) [DecidableRel G.Adj] [Zero α]
     [One α] : (G.adjMatrix α).IsAdjMatrix where
@@ -459,13 +471,14 @@ theorem isAdjMatrix_adjMatrix''' (α : Type*) {V : Type*}
 ## Query commands
 
 * output specific parts of the typical error messages
-* for example: `show_splits`, `show_state`, `show_true`, `show_false`, `show_asserted` and `show_eqcs`
+* for example: `show_splits`, `show_state`, `show_true`,`show_asserted` and `show_eqcs`
 
 ```lean
 theorem exists_subset_or_subset_of_two_mul_lt_card''''
-    {α : Type*} [DecidableEq α] {X Y : Finset α} {n : ℕ}
-    (hXY : 2 * n < #(X ∪ Y)) :
-    ∃ C : Finset α, n < #C ∧ (C ⊆ X ∨ C ⊆ Y) := by
+    {α : Type*} [DecidableEq α] {X Y : Finset α}
+    {n : ℕ} (hXY : 2 * n < #(X ∪ Y)) :
+    ∃ C : Finset α,
+      n < #C ∧ (C ⊆ X ∨ C ⊆ Y) := by
   grind =>
     have : #(X ∪ Y) = #X + #(Y \ X)
     show_eqcs
@@ -494,14 +507,15 @@ specialized to prove that sets are compact.
 It is called by the `compactness` tactic. -/
 register_grind_attr compactness
 
-/-- The `closedness` attribute is a custom grind-set specialized to prove that sets are closed.
+/-- The `closedness` attribute is a custom grind-set
+specialized to prove that sets are closed.
 It is called by the `closedness` tactic. -/
 register_grind_attr closedness
 ```
 
 ## Custom `grind` sets
 
-```lean
+```lean -panel
 attribute [compactness .] isCompact_Icc
 
 @[to_dual self, simp, closedness =]
@@ -522,7 +536,7 @@ example : IsCompact <|
 
 ## Style: Example 1
 
-```lean -panel
+```lean -panel -stretch
 example {α} [CommSemiring α] (x y : α) :
     (x + y) ^ 2 = x ^ 2 + 2 • x * y + y ^ 2 := by
   ring
@@ -539,19 +553,23 @@ open Polynomial
 ```
 
 ```lean -panel
-lemma eq_of_natDegree_lt_card_of_eval_eq {R} [CommRing R] [IsDomain R]
-    (p q : R[X]) {ι} [Fintype ι] {f : ι → R} (hf : Function.Injective f)
+lemma eq_of_natDegree_lt_card_of_eval_eq {R} [CommRing R]
+    [IsDomain R] (p q : R[X]) {ι} [Fintype ι] {f : ι → R}
+    (hf : Function.Injective f)
     (heval : ∀ i : ι, eval (f i) p = eval (f i) q)
-    (hcard : max p.natDegree q.natDegree < Fintype.card ι) : p = q := by
+    (hcard : max p.natDegree q.natDegree < Fintype.card ι) :
+    p = q := by
   rw [← sub_eq_zero]
   apply eq_zero_of_natDegree_lt_card_of_eval_eq_zero _ hf
   · simpa [eval_sub, sub_eq_zero]
   · grind [natDegree_sub_le]
 
-lemma eq_of_natDegree_lt_card_of_eval_eq' {R} [CommRing R] [IsDomain R]
-    (p q : R[X]) {ι} [Fintype ι] {f : ι → R} (hf : Function.Injective f)
+lemma eq_of_natDegree_lt_card_of_eval_eq' {R} [CommRing R]
+    [IsDomain R] (p q : R[X]) {ι} [Fintype ι] {f : ι → R}
+    (hf : Function.Injective f)
     (heval : ∀ i : ι, eval (f i) p = eval (f i) q)
-    (hcard : max p.natDegree q.natDegree < Fintype.card ι) : p = q := by
+    (hcard : max p.natDegree q.natDegree < Fintype.card ι) :
+    p = q := by
   rw [← sub_eq_zero]
   apply eq_zero_of_natDegree_lt_card_of_eval_eq_zero _ hf
   all_goals grind [eval_sub, sub_eq_zero, natDegree_sub_le]
