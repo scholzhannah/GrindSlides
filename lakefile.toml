@@ -2,6 +2,11 @@ name = "my-slides"
 defaultTargets = ["Slides", "generate-slides"]
 
 [[require]]
+name = "verso"
+git = "https://github.com"
+rev = "v4.36.0"
+
+[[require]]
 name = "verso-slides"
 git = "https://github.com/leanprover/verso-slides.git"
 rev = "v4.36.0"
