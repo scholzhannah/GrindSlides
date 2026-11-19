@@ -13,6 +13,8 @@ import Illuminate.Animation.Easing
 -- Import the full module so declarations such as `IO.println` retain their docs.
 import Init.System.IO
 
+import Lean.LibrarySuggestions.Default
+
 -- for the second example
 import Mathlib.Data.Finset.Defs
 
