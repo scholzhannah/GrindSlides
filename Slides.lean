@@ -13,9 +13,6 @@ import Illuminate.Animation.Easing
 -- Import the full module so declarations such as `IO.println` retain their docs.
 import Init.System.IO
 
--- cannot be in the same file
-import Slides.AddAttr
-
 -- for the second example
 import Mathlib.Data.Finset.Defs
 
