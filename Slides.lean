@@ -1,5 +1,18 @@
 import VersoSlides
 
+-- Needed by the embedded `diagram` and `animate` blocks, including shapes and widget registrations.
+-- Shake does not currently record all of these elaboration-time dependencies.
+import Illuminate -- shake: keep
+import VersoSlides.Animate
+import Illuminate.Diagram.Paper
+import Illuminate.Animation.Interpolate
+import Illuminate.Animation.Morph.Evaluate
+import Illuminate.Animation.Morph.Prepare
+import Illuminate.Animation.Easing
+-- "Hovers" in the panel need docstring metadata, which is not part of the public module data.
+-- Import the full module so declarations such as `IO.println` retain their docs.
+import Init.System.IO
+
 -- cannot be in the same file
 import Slides.AddAttr
 
